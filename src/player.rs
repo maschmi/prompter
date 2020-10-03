@@ -5,13 +5,20 @@ use std::collections::HashMap;
 
 pub struct Player {
     playback_program: String,
+    std_args: String,
     sound_process: HashMap<String, Child>
 }
 
 impl Player {
-    pub fn new(program_path: &str) -> Self {
+
+
+    pub fn new(program_path: &str, default_args: Option<&str>) -> Self {
         Self {
             playback_program: program_path.to_string(),
+            std_args: match default_args {
+                Some(arg) => arg.to_string(),
+                None => "".to_string()
+            },
             sound_process: HashMap::new()
         }
     }
@@ -21,7 +28,7 @@ impl Control for Player {
 
     fn play(&mut self, filepath: &str) -> Result<String, std::io::Error> {
         let child_process = Command::new(&self.playback_program)
-            .arg(filepath.clone())
+            .args(&[&self.std_args, filepath.clone()])
             .spawn()?;
         self.sound_process.insert(filepath.to_string(), child_process);
         Ok(filepath.to_string())

@@ -1,21 +1,18 @@
 use crate::player::Control;
-use std::borrow::Borrow;
-use std::error::Error;
 use std::{fs, io, time};
-use std::any::Any;
 
 mod fileloader;
 mod player;
 
 fn main()  -> io::Result<()> {
-    let mut audio_playback = player::Player::new("/usr/bin/mpg123");
+    let mut audio_playback = player::Player::new("/usr/bin/mpg123", Some("-Tq"));
     let dir_to_search ="/home/martin/Documents";
     let entries = fs::read_dir(dir_to_search)?
         .map(|res| res.map(|e| e.path()))
         .filter(|res| {
             match res {
                 Ok(path) => path.file_name().unwrap().to_str().unwrap().ends_with("mp3"),
-                Err(e) => false
+                Err(_) => false
             }
         })
         .collect::<Result<Vec<_>, io::Error>>()?;
