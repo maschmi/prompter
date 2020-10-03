@@ -10,7 +10,7 @@ mod player;
 fn main()  -> io::Result<()> {
     let mut audio_playback = player::Player::new("/usr/bin/mpg123");
     let dir_to_search ="/home/martin/Documents";
-    let mut entries = fs::read_dir(dir_to_search)?
+    let entries = fs::read_dir(dir_to_search)?
         .map(|res| res.map(|e| e.path()))
         .filter(|res| {
             match res {
@@ -21,16 +21,17 @@ fn main()  -> io::Result<()> {
         .collect::<Result<Vec<_>, io::Error>>()?;
     println!("Parsing {}", dir_to_search);
     for x in entries {
-        println!("Evaluating {:?}", x);
-        println!("Starting {}", x.to_str().unwrap());
-        let song = match audio_playback.play(x.clone().to_str().unwrap()) {
-            Ok(_) => x.to_str().unwrap(),
+        match audio_playback.play(x.clone().to_str().unwrap()) {
+            Ok(song) => println!("Playing {}", song),
             Err(e) => panic!(e.to_string())
         };
-        println!("{}", song);
+
         let pause = time::Duration::from_millis(10000);
         std::thread::sleep(pause);
-        audio_playback.stop(x.clone().to_str().unwrap());
+        match audio_playback.stop(x.clone().to_str().unwrap()) {
+            Ok(f) => println!("{} was stopped", f),
+            Err(e) => panic!(e.to_string())
+        };
     }
     Ok(())
 }

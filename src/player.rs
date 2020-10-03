@@ -19,23 +19,23 @@ impl Player {
 
 impl Control for Player {
 
-    fn play(&mut self, filepath: &str) -> Result<(), std::io::Error> {
+    fn play(&mut self, filepath: &str) -> Result<String, std::io::Error> {
         let child_process = Command::new(&self.playback_program)
             .arg(filepath.clone())
             .spawn()?;
         self.sound_process.insert(filepath.to_string(), child_process);
-        Ok(())
+        Ok(filepath.to_string())
     }
 
-    fn stop(&mut self, filepath: &str) -> () {
-        self.sound_process
-            .remove(filepath)
-            .unwrap().kill();
+    fn stop(&mut self, filepath: &str) -> Result<String, std::io::Error> {
+        self.sound_process.remove(filepath)
+            .unwrap().kill()?;
+        Ok(filepath.to_string())
     }
 }
 
 pub trait Control {
-    fn play(&mut self, filepath: &str) -> Result<(), std::io::Error>;
-    fn stop(&mut self, filepath: &str) ->  ();
+    fn play(&mut self, filepath: &str) -> Result<String, std::io::Error>;
+    fn stop(&mut self, filepath: &str) ->  Result<String, std::io::Error>;
 }
 
