@@ -7,25 +7,17 @@ mod player;
 fn main()  -> io::Result<()> {
     let mut audio_playback = player::Player::new("/usr/bin/mpg123", Some("-Tq"));
     let dir_to_search ="/home/martin/Documents";
-    let entries = fs::read_dir(dir_to_search)?
-        .map(|res| res.map(|e| e.path()))
-        .filter(|res| {
-            match res {
-                Ok(path) => path.file_name().unwrap().to_str().unwrap().ends_with("mp3"),
-                Err(_) => false
-            }
-        })
-        .collect::<Result<Vec<_>, io::Error>>()?;
-    println!("Parsing {}", dir_to_search);
+    let entries = fileloader::get_mp3_files(dir_to_search).expect("Couĺd not open directory!");
+
     for x in entries {
-        match audio_playback.play(x.clone().to_str().unwrap()) {
+        match audio_playback.play(x.to_str().unwrap()) {
             Ok(song) => println!("Playing {}", song),
             Err(e) => panic!(e.to_string())
         };
 
         let pause = time::Duration::from_millis(10000);
         std::thread::sleep(pause);
-        match audio_playback.stop(x.clone().to_str().unwrap()) {
+        match audio_playback.stop(x.to_str().unwrap()) {
             Ok(f) => println!("{} was stopped", f),
             Err(e) => panic!(e.to_string())
         };
