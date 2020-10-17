@@ -1,6 +1,6 @@
 use std::{fs, io};
 use std::io::Error;
-use std::fs::{DirEntry, File};
+use std::fs::{DirEntry};
 use std::ffi::OsString;
 use std::collections::HashMap;
 
@@ -143,7 +143,7 @@ impl PlaybackFiles {
         next_files
     }
 
-    pub fn move_next(&mut self) -> PlaybackFiles {
+    pub fn move_next(&self) -> PlaybackFiles {
         let updated_position = self.current_position + 1;
         let next_files = PlaybackFiles::copy_file_entry(
             self.file_pairs.get(updated_position + 1));
@@ -158,7 +158,7 @@ impl PlaybackFiles {
         }
     }
 
-    pub fn move_back(&mut self) -> PlaybackFiles {
+    pub fn move_back(&self) -> PlaybackFiles {
         let updated_position = self.current_position - 1;
         let previous_files = PlaybackFiles::copy_file_entry(
             self.file_pairs.get(updated_position - 1));
@@ -173,7 +173,7 @@ impl PlaybackFiles {
         }
     }
 
-    pub fn copy(&mut self) -> PlaybackFiles {
+    pub fn copy(&self) -> PlaybackFiles {
         PlaybackFiles {
             previous_files: PlaybackFiles::copy_file_entry(self.previous_files.as_ref()),
             current_files: PlaybackFiles::copy_file_entry(self.previous_files.as_ref()),
