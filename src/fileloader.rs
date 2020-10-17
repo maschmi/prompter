@@ -14,16 +14,14 @@ struct OrderedFiles {
     path: OsString
 }
 
-pub struct PlaybackFiles {
-    counter: usize,
+struct FileLoader {
     audio_text: Vec<TextAndAudioPair>,
     dir_to_parse: String
 }
 
-impl PlaybackFiles {
+impl FileLoader {
     pub fn new(dir: &str) -> Self {
         Self {
-            counter: 0,
             dir_to_parse: dir.to_string(),
             audio_text: Vec::new()
         }
@@ -33,7 +31,7 @@ impl PlaybackFiles {
         let mp3_files = self.get_mp3_files().unwrap();
         let txt_files = self.get_text_files().unwrap();
 
-        let text_map= PlaybackFiles::parse_text_files(txt_files);
+        let text_map= FileLoader::parse_text_files(txt_files);
         let mut audio_map: HashMap<u32, OsString> = HashMap::new();
         mp3_files.iter()
             .for_each(|e| { audio_map.insert(e.order_number, e.path.to_os_string()); });
@@ -52,15 +50,6 @@ impl PlaybackFiles {
         }).collect();
     }
 
-    pub fn next(&mut self) -> Option<&TextAndAudioPair> {
-        if self.counter >= self.audio_text.len() {
-            return None;
-        }
-        let pair = &self.audio_text[self.counter];
-        self.counter += 1;
-        Some(pair)
-    }
-
     fn get_mp3_files(&mut self) -> Result<Vec<OrderedFiles>, io::Error> {
         let files = self.read_dir_and_filter("mp3")?;
         Ok(files)
@@ -73,8 +62,8 @@ impl PlaybackFiles {
 
     fn read_dir_and_filter(&mut self, ending: &str) -> Result<Vec<OrderedFiles>, io::Error> {
         fs::read_dir(self.dir_to_parse.clone())?
-            .filter(|res| PlaybackFiles::file_name_ends_on(res, ending))
-            .filter_map(|entry| PlaybackFiles::extract_path(entry))
+            .filter(|res| FileLoader::file_name_ends_on(res, ending))
+            .filter_map(|entry| FileLoader::extract_path(entry))
             .map(|path| Ok(path))
             .collect::<Result<Vec<_>, io::Error>>()
     }
@@ -82,7 +71,7 @@ impl PlaybackFiles {
     fn extract_path(entry: Result<DirEntry, Error>) -> Option<OrderedFiles> {
         match entry {
             Ok(dir_entry) => Some(OrderedFiles {
-                order_number: PlaybackFiles::extract_order_number(dir_entry.file_name()),
+                order_number: FileLoader::extract_order_number(dir_entry.file_name()),
                 path: dir_entry.path().into_os_string() }
             ),
             Err(e) => {
@@ -115,4 +104,3 @@ impl PlaybackFiles {
         map
     }
 }
-
