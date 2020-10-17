@@ -1,9 +1,10 @@
 use std::{fs, io};
 use std::io::Error;
-use std::fs::{DirEntry};
+use std::fs::{DirEntry, File};
 use std::ffi::OsString;
 use std::collections::HashMap;
 
+#[derive(Clone)]
 pub struct TextAndAudioPair {
     pub audio: Option<OsString>,
     pub text: Option<String>
@@ -14,20 +15,20 @@ struct OrderedFiles {
     path: OsString
 }
 
-struct FileLoader {
-    audio_text: Vec<TextAndAudioPair>,
+pub struct FileLoader {
     dir_to_parse: String
 }
 
 impl FileLoader {
-    pub fn new(dir: &str) -> Self {
-        Self {
-            dir_to_parse: dir.to_string(),
-            audio_text: Vec::new()
-        }
+
+    fn load(directory: &str) -> Vec<TextAndAudioPair> {
+        let mut instance = Self {
+            dir_to_parse: directory.to_string()
+        };
+        instance.loadImpl()
     }
 
-    pub fn load(&mut self) -> () {
+    fn loadImpl(&mut self) -> Vec<TextAndAudioPair> {
         let mp3_files = self.get_mp3_files().unwrap();
         let txt_files = self.get_text_files().unwrap();
 
@@ -44,10 +45,10 @@ impl FileLoader {
         order_numbers.sort();
         order_numbers.dedup();
 
-        self.audio_text = order_numbers.iter().map(|on| TextAndAudioPair {
+        order_numbers.iter().map(|on| TextAndAudioPair {
             text: text_map.get(on).cloned(),
             audio: audio_map.get(on).cloned()
-        }).collect();
+        }).collect()
     }
 
     fn get_mp3_files(&mut self) -> Result<Vec<OrderedFiles>, io::Error> {
@@ -102,5 +103,84 @@ impl FileLoader {
                 |f| { map.insert(f.order_number, fs::read_to_string(f.path.clone()).unwrap()); }
             );
         map
+    }
+}
+
+
+pub struct PlaybackFiles {
+    pub previous_files: Option<TextAndAudioPair>,
+    pub current_files: Option<TextAndAudioPair>,
+    pub next_files: Option<TextAndAudioPair>,
+    pub current_position: usize,
+    pub total_entries: usize,
+    file_pairs: Vec<TextAndAudioPair>
+}
+
+impl PlaybackFiles {
+
+    pub fn initialize(directory: &str) -> PlaybackFiles {
+        let files = FileLoader::load(directory);
+        let size = files.len();
+        PlaybackFiles {
+            previous_files: None,
+            current_files: None,
+            next_files: None,
+            file_pairs: files,
+            total_entries: size,
+            current_position: 0,
+        }
+    }
+
+    fn copy_file_entry(input: Option<&TextAndAudioPair>) -> Option<TextAndAudioPair>{
+        let mut next_files: Option<TextAndAudioPair> = None;
+        if let Some(nxt) = input {
+            next_files = Some( TextAndAudioPair {
+                audio: nxt.audio.as_ref().map(|a| OsString::from(a)),
+                text: nxt.text.as_ref().map(|t| String::from(t))
+                }
+            );
+        };
+        next_files
+    }
+
+    pub fn move_next(&mut self) -> PlaybackFiles {
+        let updated_position = self.current_position + 1;
+        let next_files = PlaybackFiles::copy_file_entry(
+            self.file_pairs.get(updated_position + 1));
+
+        PlaybackFiles {
+            previous_files: self.current_files.as_ref().cloned(),
+            current_files: self.next_files.as_ref().cloned(),
+            next_files,
+            current_position: updated_position,
+            total_entries: self.total_entries,
+            file_pairs: self.file_pairs.to_vec()
+        }
+    }
+
+    pub fn move_back(&mut self) -> PlaybackFiles {
+        let updated_position = self.current_position - 1;
+        let previous_files = PlaybackFiles::copy_file_entry(
+            self.file_pairs.get(updated_position - 1));
+
+        PlaybackFiles {
+            previous_files,
+            current_files: self.previous_files.as_ref().cloned(),
+            next_files: self.current_files.as_ref().cloned(),
+            current_position: updated_position,
+            total_entries: self.total_entries,
+            file_pairs: self.file_pairs.to_vec()
+        }
+    }
+
+    pub fn copy(&mut self) -> PlaybackFiles {
+        PlaybackFiles {
+            previous_files: PlaybackFiles::copy_file_entry(self.previous_files.as_ref()),
+            current_files: PlaybackFiles::copy_file_entry(self.previous_files.as_ref()),
+            next_files: PlaybackFiles::copy_file_entry(self.previous_files.as_ref()),
+            current_position: self.current_position,
+            total_entries: self.total_entries,
+            file_pairs: self.file_pairs.to_vec()
+        }
     }
 }
