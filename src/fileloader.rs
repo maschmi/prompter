@@ -142,39 +142,64 @@ impl PlaybackFiles {
     }
 
     pub fn move_next(&self) -> PlaybackFiles {
-        let updated_position = self.current_position + 1;
+
         let next_files = PlaybackFiles::copy_file_entry(
-            self.file_pairs.get(updated_position));
+            self.file_pairs.get(self.current_position + 1));
+        let previous_files = PlaybackFiles::copy_file_entry(self.current_files.as_ref());
+        let curr_files = PlaybackFiles::copy_file_entry(self.next_files.as_ref());
 
         PlaybackFiles {
-            previous_files: PlaybackFiles::copy_file_entry(self.current_files.as_ref()),
-            current_files: PlaybackFiles::copy_file_entry(self.next_files.as_ref()),
+            previous_files: previous_files,
+            current_files: curr_files,
             next_files,
-            current_position: updated_position,
+            current_position: self.current_position + 1,
             total_entries: self.total_entries,
             file_pairs: self.file_pairs.to_vec()
         }
     }
 
     pub fn move_back(&self) -> PlaybackFiles {
+
         if self.current_position == 0 {
             return PlaybackFiles {
                 previous_files: None,
                 current_files: None,
-                next_files: PlaybackFiles::copy_file_entry(self.current_files.as_ref()),
-                current_position: self.current_position,
+                next_files: PlaybackFiles::copy_file_entry(self.file_pairs.get(0)),
+                current_position: 0,
                 total_entries: self.total_entries,
                 file_pairs: self.file_pairs.to_vec()
             };
         }
+
+        if self.current_position == 1 {
+            return PlaybackFiles {
+                previous_files: None,
+                current_files: PlaybackFiles::copy_file_entry(self.file_pairs.get(0)),
+                next_files: PlaybackFiles::copy_file_entry(self.file_pairs.get(1)),
+                current_position: 0,
+                total_entries: self.total_entries,
+                file_pairs: self.file_pairs.to_vec()
+            };
+        }
+
         let updated_position = self.current_position - 1;
-        let previous_files = PlaybackFiles::copy_file_entry(
+        let next_files = PlaybackFiles::copy_file_entry(
+            self.file_pairs.get(self.current_position));
+
+        let mut previous_files = None;
+        if self.current_position > 2 {
+            previous_files = PlaybackFiles::copy_file_entry({
+                self.file_pairs.get(self.current_position - 2)
+            });
+        }
+
+        let curr_files = PlaybackFiles::copy_file_entry(
             self.file_pairs.get(updated_position));
 
         PlaybackFiles {
             previous_files,
-            current_files: PlaybackFiles::copy_file_entry(self.previous_files.as_ref()),
-            next_files: PlaybackFiles::copy_file_entry(self.current_files.as_ref()),
+            current_files: curr_files,
+            next_files: next_files,
             current_position: updated_position,
             total_entries: self.total_entries,
             file_pairs: self.file_pairs.to_vec()
