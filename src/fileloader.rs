@@ -106,7 +106,6 @@ impl FileLoader {
     }
 }
 
-
 pub struct PlaybackFiles {
     pub previous_files: Option<TextAndAudioPair>,
     pub current_files: Option<TextAndAudioPair>,
