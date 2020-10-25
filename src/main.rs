@@ -7,7 +7,7 @@ use std::rc::{Rc, Weak};
 use std::ops::Deref;
 use std::cell::RefCell;
 use cursive::traits::Nameable;
-use std::io;
+use std::{io, env};
 use crate::playlist::{PrompterPlaylist, TextAndAudioPair};
 
 mod fileloader;
@@ -122,11 +122,19 @@ fn show_error(siv: &mut Cursive, message: &str, parameter: &str) {
 }
 
 fn main()  -> io::Result<()> {
+    let args: Vec<String> = env::args().collect();
+    let player = "/usr/bin/mpg123";
+    let player_args = Some("-q");
+    let mut dir_to_search ="/home/martin/Documents";
 
-    let dir_to_search ="/home/martin/Documents";
+    if let Some(path) = args.get(1) {
+        dir_to_search = path.as_str();
+    }
+
+
     let initital_files = PrompterPlaylist::initialize(dir_to_search);
 
-    let audio_player = player::Player::new("/usr/bin/mpg123", Some("-q"));
+    let audio_player = player::Player::new(player, player_args);
     let audio_player_ref = Rc::new(RefCell::new(audio_player));
 
     let mut siv = cursive::default();
