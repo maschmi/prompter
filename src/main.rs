@@ -87,7 +87,7 @@ fn next(siv: &mut Cursive, file_list_ref: Rc<PrompterPlaylist>, audio_player_ref
                 update(siv.borrow_mut(), moved_list, audio_player_ref, text);
             }
         } else {
-            update(siv.borrow_mut(), file_list, audio_player_ref, "Nix mehr da.")
+            update(siv.borrow_mut(), moved_list, audio_player_ref, "Nix mehr da.")
         }
     }
 }
@@ -121,7 +121,7 @@ fn previous(siv: &mut Cursive, file_list_ref: Rc<PrompterPlaylist>, audio_player
                 update(siv.borrow_mut(), moved_list, audio_player_ref, text);
             }
         } else {
-            update(siv.borrow_mut(), file_list, audio_player_ref, "Am Anfang war nix.")
+            update(siv.borrow_mut(), moved_list, audio_player_ref, "Am Anfang war nix.")
         }
     }
 }

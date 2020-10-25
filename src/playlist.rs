@@ -16,7 +16,9 @@ pub struct TextAndAudioPair {
 pub struct PrompterPlaylist {
     pub current_position: usize,
     pub total_entries: usize,
-    file_pairs: Vec<TextAndAudioPair>
+    file_pairs: Vec<TextAndAudioPair>,
+    first_next: bool,
+    last_back: bool
 }
 
 impl PrompterPlaylist {
@@ -29,6 +31,8 @@ impl PrompterPlaylist {
             file_pairs: files,
             total_entries: size,
             current_position: 0,
+            first_next: true,
+            last_back: true
         }
     }
 
@@ -45,35 +49,56 @@ impl PrompterPlaylist {
 
     pub fn move_next(&self) -> PrompterPlaylist {
 
-        let mut new_pos = self.current_position + 1;
-        if new_pos > self.file_pairs.len() + 1 {
-            new_pos = self.current_position;
+        if self.first_next {
+            return PrompterPlaylist {
+                current_position: 0,
+                total_entries: self.total_entries,
+                file_pairs: self.file_pairs.to_vec(),
+                first_next: false,
+                last_back: false
+            }
         }
 
-
+        let mut new_pos = self.current_position + 1;
+        if new_pos > self.total_entries {
+            new_pos = self.current_position;
+        }
 
         PrompterPlaylist {
             current_position: new_pos,
             total_entries: self.total_entries,
-            file_pairs: self.file_pairs.to_vec()
+            file_pairs: self.file_pairs.to_vec(),
+            first_next: false,
+            last_back: false
         }
+
     }
 
     pub fn move_back(&self) -> PrompterPlaylist {
 
         let mut new_pos = 0;
+        let mut last_back = false;
         if self.current_position > 0 {
             new_pos = self.current_position - 1;
+        } else {
+            return PrompterPlaylist {
+                current_position: 0,
+                total_entries: self.total_entries,
+                file_pairs: self.file_pairs.to_vec(),
+                first_next: true,
+                last_back: true
+            }
         }
 
-        let previous_files = self.file_pairs.get(self.current_position);
-        let current_files = self.file_pairs.get(new_pos);
-        let next_files = self.file_pairs.get(new_pos + 1);
-
+        if self.current_position > self.total_entries {
+            new_pos = self.total_entries - 1;
+        }
         PrompterPlaylist {
             current_position: new_pos,
             total_entries: self.total_entries,
-            file_pairs: self.file_pairs.to_vec()
+            file_pairs: self.file_pairs.to_vec(),
+            first_next: self.first_next,
+            last_back: false
         }
     }
 
@@ -81,15 +106,23 @@ impl PrompterPlaylist {
         PrompterPlaylist {
             current_position: self.current_position,
             total_entries: self.total_entries,
-            file_pairs: self.file_pairs.to_vec()
+            file_pairs: self.file_pairs.to_vec(),
+            first_next: self.first_next,
+            last_back: self.last_back
         }
     }
 
     pub fn get_current_files(&self) -> Option<&TextAndAudioPair> {
+        if self.last_back {
+            return None
+        }
         self.file_pairs.get(self.current_position)
     }
 
     pub fn get_previous_files(&self) -> Option<&TextAndAudioPair> {
+        if self.last_back {
+            return None
+        }
         self.file_pairs.get(self.current_position - 1)
     }
 
