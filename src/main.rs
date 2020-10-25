@@ -2,16 +2,18 @@ use crate::player::{Control, Player};
 use cursive::Cursive;
 use cursive::views::{TextView, OnEventView, TextContentRef};
 use std::borrow::{BorrowMut, Borrow};
-use crate::fileloader::{PrompterPlaylist, TextAndAudioPair};
+
 use std::rc::{Rc, Weak};
 use std::ops::Deref;
 use std::cell::RefCell;
 use cursive::traits::Nameable;
 use std::io;
+use crate::playlist::PrompterPlaylist;
 
 mod fileloader;
 mod player;
 mod tui;
+mod playlist;
 
 
 fn update(siv: &mut Cursive, current_files: PrompterPlaylist, audio_player: Weak<RefCell<Player>>, text: &str) {
