@@ -44,7 +44,7 @@ fn stop_player(siv: &mut Cursive, file_list_ref: Rc<PrompterPlaylist>, audio_pla
     let audio_player = strong_ref.deref();
     let file_list = file_list_ref.deref().copy();
 
-    if let Some(file_to_stop) = file_list.current_files.borrow().as_ref() {
+    if let Some(file_to_stop) = file_list.get_current_files() {
         if let Some(fp) = file_to_stop.audio.as_ref() {
             audio_player.deref().borrow_mut().stop(fp.to_str().unwrap());
         }
@@ -63,7 +63,7 @@ fn next(siv: &mut Cursive, file_list_ref: Rc<PrompterPlaylist>, audio_player_ref
         let audio_player = audio_player_upgrade.deref();
         let file_list = file_list_ref.deref().copy();
 
-        if let Some(file_to_stop) = file_list.current_files.borrow().as_ref() {
+        if let Some(file_to_stop) = file_list.get_current_files() {
             if let Some(fp) = file_to_stop.audio.as_ref() {
                 audio_player.deref().borrow_mut().stop(fp.to_str().unwrap());
             }
@@ -71,7 +71,7 @@ fn next(siv: &mut Cursive, file_list_ref: Rc<PrompterPlaylist>, audio_player_ref
         siv.pop_layer();
         let moved_list = file_list.move_next();
         let copied_List = moved_list.copy();
-        if let Some(next_files) = copied_List.borrow().current_files.as_ref() {
+        if let Some(next_files) = copied_List.get_current_files() {
 
             let mut text = "Kein Text verfügbar.";
 
@@ -96,7 +96,7 @@ fn previous(siv: &mut Cursive, file_list_ref: Rc<PrompterPlaylist>, audio_player
         let audio_player = audio_player_upgrade.deref();
         let file_list = file_list_ref.deref().copy();
 
-        if let Some(file_to_stop) = file_list.current_files.borrow().as_ref() {
+        if let Some(file_to_stop) = file_list.get_current_files() {
             if let Some(fp) = file_to_stop.audio.as_ref() {
                 audio_player.deref().borrow_mut().stop(fp.to_str().unwrap());
             }
@@ -105,7 +105,7 @@ fn previous(siv: &mut Cursive, file_list_ref: Rc<PrompterPlaylist>, audio_player
         siv.pop_layer();
         let moved_list = file_list.move_back();
         let copied_list = moved_list.copy();
-        if let Some(prev_files) = copied_list.current_files.borrow().as_ref() {
+        if let Some(prev_files) = copied_list.get_current_files() {
 
             let mut text = "Kein Text verfügbar.";
 

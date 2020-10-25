@@ -14,9 +14,6 @@ pub struct TextAndAudioPair {
 }
 
 pub struct PrompterPlaylist {
-    pub previous_files: Option<TextAndAudioPair>,
-    pub current_files: Option<TextAndAudioPair>,
-    pub next_files: Option<TextAndAudioPair>,
     pub current_position: usize,
     pub total_entries: usize,
     file_pairs: Vec<TextAndAudioPair>
@@ -26,11 +23,9 @@ impl PrompterPlaylist {
 
     pub fn initialize(directory: &str) -> PrompterPlaylist {
         let files = FileLoader::load(directory);
+
         let size = files.len();
         PrompterPlaylist {
-            previous_files: None,
-            current_files: None,
-            next_files: PrompterPlaylist::copy_file_entry(files.get(0)),
             file_pairs: files,
             total_entries: size,
             current_position: 0,
@@ -50,16 +45,15 @@ impl PrompterPlaylist {
 
     pub fn move_next(&self) -> PrompterPlaylist {
 
-        let next_files = PrompterPlaylist::copy_file_entry(
-            self.file_pairs.get(self.current_position + 1));
-        let previous_files = PrompterPlaylist::copy_file_entry(self.current_files.as_ref());
-        let curr_files = PrompterPlaylist::copy_file_entry(self.next_files.as_ref());
+        let mut new_pos = self.current_position + 1;
+        if new_pos > self.file_pairs.len() + 1 {
+            new_pos = self.current_position;
+        }
+
+
 
         PrompterPlaylist {
-            previous_files: previous_files,
-            current_files: curr_files,
-            next_files,
-            current_position: self.current_position + 1,
+            current_position: new_pos,
             total_entries: self.total_entries,
             file_pairs: self.file_pairs.to_vec()
         }
@@ -67,47 +61,17 @@ impl PrompterPlaylist {
 
     pub fn move_back(&self) -> PrompterPlaylist {
 
-        if self.current_position == 0 {
-            return PrompterPlaylist {
-                previous_files: None,
-                current_files: None,
-                next_files: PrompterPlaylist::copy_file_entry(self.file_pairs.get(0)),
-                current_position: 0,
-                total_entries: self.total_entries,
-                file_pairs: self.file_pairs.to_vec()
-            };
+        let mut new_pos = 0;
+        if self.current_position > 0 {
+            new_pos = self.current_position - 1;
         }
 
-        if self.current_position == 1 {
-            return PrompterPlaylist {
-                previous_files: None,
-                current_files: PrompterPlaylist::copy_file_entry(self.file_pairs.get(0)),
-                next_files: PrompterPlaylist::copy_file_entry(self.file_pairs.get(1)),
-                current_position: 0,
-                total_entries: self.total_entries,
-                file_pairs: self.file_pairs.to_vec()
-            };
-        }
-
-        let updated_position = self.current_position - 1;
-        let next_files = PrompterPlaylist::copy_file_entry(
-            self.file_pairs.get(self.current_position));
-
-        let mut previous_files = None;
-        if self.current_position > 2 {
-            previous_files = PrompterPlaylist::copy_file_entry({
-                self.file_pairs.get(self.current_position - 2)
-            });
-        }
-
-        let curr_files = PrompterPlaylist::copy_file_entry(
-            self.file_pairs.get(updated_position));
+        let previous_files = self.file_pairs.get(self.current_position);
+        let current_files = self.file_pairs.get(new_pos);
+        let next_files = self.file_pairs.get(new_pos + 1);
 
         PrompterPlaylist {
-            previous_files,
-            current_files: curr_files,
-            next_files: next_files,
-            current_position: updated_position,
+            current_position: new_pos,
             total_entries: self.total_entries,
             file_pairs: self.file_pairs.to_vec()
         }
@@ -115,12 +79,21 @@ impl PrompterPlaylist {
 
     pub fn copy(&self) -> PrompterPlaylist {
         PrompterPlaylist {
-            previous_files: PrompterPlaylist::copy_file_entry(self.previous_files.as_ref()),
-            current_files: PrompterPlaylist::copy_file_entry(self.current_files.as_ref()),
-            next_files: PrompterPlaylist::copy_file_entry(self.next_files.as_ref()),
             current_position: self.current_position,
             total_entries: self.total_entries,
             file_pairs: self.file_pairs.to_vec()
         }
+    }
+
+    pub fn get_current_files(&self) -> Option<&TextAndAudioPair> {
+        self.file_pairs.get(self.current_position)
+    }
+
+    pub fn get_previous_files(&self) -> Option<&TextAndAudioPair> {
+        self.file_pairs.get(self.current_position - 1)
+    }
+
+    pub fn get_next_files(&self) -> Option<&TextAndAudioPair> {
+        self.file_pairs.get(self.current_position + 1)
     }
 }
