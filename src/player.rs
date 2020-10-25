@@ -34,7 +34,7 @@ impl Control for Player {
 
     fn stop(&mut self, filepath: &str) -> Result<String, std::io::Error> {
         if let Some(mut child) = self.sound_process.remove(filepath) {
-            child.kill();
+            child.kill()?;
         }
 
         Ok(filepath.to_string())

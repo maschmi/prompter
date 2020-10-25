@@ -1,6 +1,6 @@
 use crate::player::{Control, Player};
 use cursive::Cursive;
-use cursive::views::{TextView, OnEventView };
+use cursive::views::{TextView, OnEventView, Dialog};
 use std::borrow::{BorrowMut};
 
 use std::rc::{Rc, Weak};
@@ -9,7 +9,6 @@ use std::cell::RefCell;
 use cursive::traits::Nameable;
 use std::io;
 use crate::playlist::{PrompterPlaylist, TextAndAudioPair};
-use std::ffi::OsString;
 
 mod fileloader;
 mod player;
@@ -64,7 +63,10 @@ fn skip_impl (siv: &mut Cursive, file_list_ref: Rc<PrompterPlaylist>, audio_play
 
         if let Some(file_to_stop) = file_list.get_current_files() {
             if let Some(fp) = file_to_stop.audio.as_ref() {
-                audio_player.deref().borrow_mut().stop(fp.to_str().unwrap());
+                match audio_player.borrow_mut().stop(fp.to_str().unwrap()) {
+                    Ok(_) => {}
+                    Err(e) => { show_error(siv, "Konnte den Audioplayer nicht starten.", e.to_string().as_str())}
+                };
             }
         }
 
@@ -103,10 +105,20 @@ fn execute_skip(siv: &mut Cursive, audio_player_ref: Weak<RefCell<Player>>, audi
         }
 
         if let Some(audio_file) = next_files.audio.as_ref() {
-            audio_player.borrow_mut().play(audio_file.to_str().unwrap());
+            match audio_player.borrow_mut().play(audio_file.to_str().unwrap()) {
+                Ok(_) => {}
+                Err(e) => { show_error(siv, "Konnte den Audioplayer nicht starten.", e.to_string().as_str())}
+            };
         }
     }
     update(siv.borrow_mut(), moved_file_list, audio_player_ref, text.as_str());
+}
+
+fn show_error(siv: &mut Cursive, message: &str, parameter: &str) {
+    let mut msq = message.to_owned();
+    msq.push_str(parameter);
+    siv.add_layer(Dialog::text(msq).title("Error").button("Ok", |s| { s.pop_layer(); } ));
+
 }
 
 fn main()  -> io::Result<()> {

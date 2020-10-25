@@ -20,7 +20,7 @@ pub struct FileLoader {
 
 impl FileLoader {
 
-    fn loadImpl(&mut self) -> Vec<TextAndAudioPair> {
+    fn load_impl(&mut self) -> Vec<TextAndAudioPair> {
         let mp3_files = self.get_mp3_files().unwrap();
         let txt_files = self.get_text_files().unwrap();
 
@@ -103,6 +103,6 @@ impl SearchForPlaylistFiles for FileLoader {
         let mut instance = Self {
             dir_to_parse: directory.to_string()
         };
-        instance.loadImpl()
+        instance.load_impl()
     }
 }
