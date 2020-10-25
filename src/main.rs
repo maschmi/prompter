@@ -9,12 +9,19 @@ use std::cell::RefCell;
 use cursive::traits::Nameable;
 use std::io;
 use crate::playlist::PrompterPlaylist;
+use std::process::exit;
 
 mod fileloader;
 mod player;
 mod tui;
 mod playlist;
 
+
+enum PlaylistAction {
+    NEXT,
+    BACK,
+    STOP
+}
 
 fn update(siv: &mut Cursive, current_files: PrompterPlaylist, audio_player: Weak<RefCell<Player>>, text: &str) {
     let text_view = TextView::new(text).with_name("text");
@@ -40,16 +47,38 @@ fn update(siv: &mut Cursive, current_files: PrompterPlaylist, audio_player: Weak
 }
 
 fn stop_player(siv: &mut Cursive, file_list_ref: Rc<PrompterPlaylist>, audio_player_ref: Weak<RefCell<Player>>) {
-    let strong_ref = audio_player_ref.upgrade().unwrap();
-    let audio_player = strong_ref.deref();
-    let file_list = file_list_ref.deref().copy();
+    skip_impl(siv, file_list_ref, audio_player_ref, PlaylistAction::STOP);
+}
 
-    if let Some(file_to_stop) = file_list.get_current_files() {
-        if let Some(fp) = file_to_stop.audio.as_ref() {
-            audio_player.deref().borrow_mut().stop(fp.to_str().unwrap());
+fn next(siv: &mut Cursive, file_list_ref: Rc<PrompterPlaylist>, audio_player_ref: Weak<RefCell<Player>>)  {
+    skip_impl(siv, file_list_ref, audio_player_ref, PlaylistAction::NEXT);
+}
+
+fn previous(siv: &mut Cursive, file_list_ref: Rc<PrompterPlaylist>, audio_player_ref: Weak<RefCell<Player>>)  {
+    skip_impl(siv, file_list_ref, audio_player_ref, PlaylistAction::BACK);
+}
+
+fn skip_impl (siv: &mut Cursive, file_list_ref: Rc<PrompterPlaylist>, audio_player_ref: Weak<RefCell<Player>>, skip_direction: PlaylistAction) {
+    if let Some(audio_player_upgrade) = audio_player_ref.upgrade() {
+        let audio_player = audio_player_upgrade.deref();
+        let file_list = file_list_ref.deref().copy();
+
+        if let Some(file_to_stop) = file_list.get_current_files() {
+            if let Some(fp) = file_to_stop.audio.as_ref() {
+                audio_player.deref().borrow_mut().stop(fp.to_str().unwrap());
+            }
         }
-    }
 
+        match skip_direction {
+            PlaylistAction::NEXT => {execute_skip(siv, audio_player_ref, audio_player, file_list.move_next(), "Nix mehr da");}
+            PlaylistAction::BACK => {execute_skip(siv, audio_player_ref, audio_player, file_list.move_back(), "Am Anfang war nix.");}
+            PlaylistAction::STOP => {execute_stop(siv, audio_player_ref, file_list)}
+        }
+
+    }
+}
+
+fn execute_stop(siv: &mut Cursive, audio_player_ref: Weak<RefCell<Player>>, file_list: PrompterPlaylist) {
     let text = siv.call_on_name("text", |v: &mut TextView|  { v.get_content() });
     siv.pop_layer();
     match text {
@@ -58,73 +87,25 @@ fn stop_player(siv: &mut Cursive, file_list_ref: Rc<PrompterPlaylist>, audio_pla
     };
 }
 
-fn next(siv: &mut Cursive, file_list_ref: Rc<PrompterPlaylist>, audio_player_ref: Weak<RefCell<Player>>)  {
-    if let Some(audio_player_upgrade) = audio_player_ref.upgrade() {
-        let audio_player = audio_player_upgrade.deref();
-        let file_list = file_list_ref.deref().copy();
+fn execute_skip(siv: &mut Cursive, audio_player_ref: Weak<RefCell<Player>>, audio_player: &RefCell<Player>, moved_file_list: PrompterPlaylist, placeholder_text: &str) {
+    siv.pop_layer();
+    let copied_List = moved_file_list.copy();
+    let mut text = placeholder_text;
+    if let Some(next_files) = copied_List.get_current_files() {
+        text = "Kein Text verfügbar.";
 
-        if let Some(file_to_stop) = file_list.get_current_files() {
-            if let Some(fp) = file_to_stop.audio.as_ref() {
-                audio_player.deref().borrow_mut().stop(fp.to_str().unwrap());
-            }
+        if let Some(txt) = next_files.text.as_ref() {
+            text = txt;
         }
-        siv.pop_layer();
-        let moved_list = file_list.move_next();
-        let copied_List = moved_list.copy();
-        if let Some(next_files) = copied_List.get_current_files() {
 
-            let mut text = "Kein Text verfügbar.";
-
-            if let Some(txt) = next_files.text.as_ref() {
-                text = txt;
-            }
-
-            if let Some(audio_file) = next_files.audio.as_ref() {
-                audio_player.borrow_mut().play(audio_file.to_str().unwrap());
-                //.expect(panic!("Uh oh"));
-                update(siv.borrow_mut(), moved_list, audio_player_ref, text);
-            } else {
-                update(siv.borrow_mut(), moved_list, audio_player_ref, text);
-            }
-        } else {
-            update(siv.borrow_mut(), moved_list, audio_player_ref, "Nix mehr da.")
+        if let Some(audio_file) = next_files.audio.as_ref() {
+            audio_player.borrow_mut().play(audio_file.to_str().unwrap());
         }
     }
+    update(siv.borrow_mut(), moved_file_list, audio_player_ref, text);
 }
-fn previous(siv: &mut Cursive, file_list_ref: Rc<PrompterPlaylist>, audio_player_ref: Weak<RefCell<Player>>)  {
-    if let Some(audio_player_upgrade) = audio_player_ref.upgrade() {
-        let audio_player = audio_player_upgrade.deref();
-        let file_list = file_list_ref.deref().copy();
 
-        if let Some(file_to_stop) = file_list.get_current_files() {
-            if let Some(fp) = file_to_stop.audio.as_ref() {
-                audio_player.deref().borrow_mut().stop(fp.to_str().unwrap());
-            }
-        }
 
-        siv.pop_layer();
-        let moved_list = file_list.move_back();
-        let copied_list = moved_list.copy();
-        if let Some(prev_files) = copied_list.get_current_files() {
-
-            let mut text = "Kein Text verfügbar.";
-
-            if let Some(txt) = prev_files.text.as_ref() {
-                text = txt;
-            }
-
-            if let Some(audio_file) = prev_files.audio.as_ref() {
-                audio_player.borrow_mut().play(audio_file.to_str().unwrap().borrow());
-                //.expect(panic!("Uh oh"));
-                update(siv.borrow_mut(), moved_list, audio_player_ref, text);
-            } else {
-                update(siv.borrow_mut(), moved_list, audio_player_ref, text);
-            }
-        } else {
-            update(siv.borrow_mut(), moved_list, audio_player_ref, "Am Anfang war nix.")
-        }
-    }
-}
 
 
 fn update_text_view(siv: &mut Cursive, text_to_display: &str) {
