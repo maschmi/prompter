@@ -1,11 +1,5 @@
 use std::ffi::OsString;
 use crate::fileloader::{SearchForPlaylistFiles, FileLoader};
-use std::borrow::BorrowMut;
-
-pub struct PlaylistInitConfig<T>  where T: SearchForPlaylistFiles {
-    file_loader: T,
-    directory_to_search: String,
-}
 
 #[derive(Clone)]
 pub struct TextAndAudioPair {
@@ -34,17 +28,6 @@ impl PrompterPlaylist {
             first_next: true,
             last_back: true
         }
-    }
-
-    fn copy_file_entry(input: Option<&TextAndAudioPair>) -> Option<TextAndAudioPair>{
-        if let Some(nxt) = input {
-            return Some( TextAndAudioPair {
-                audio: nxt.audio.as_ref().map(|a| OsString::from(a)),
-                text: nxt.text.as_ref().map(|t| String::from(t))
-            }
-            );
-        };
-        Option::None
     }
 
     pub fn move_next(&self) -> PrompterPlaylist {
@@ -76,8 +59,7 @@ impl PrompterPlaylist {
 
     pub fn move_back(&self) -> PrompterPlaylist {
 
-        let mut new_pos = 0;
-        let mut last_back = false;
+        let mut new_pos: usize;
         if self.current_position > 0 {
             new_pos = self.current_position - 1;
         } else {

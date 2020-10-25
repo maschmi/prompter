@@ -1,21 +1,20 @@
 use crate::player::{Control, Player};
 use cursive::Cursive;
-use cursive::views::{TextView, OnEventView, TextContentRef};
-use std::borrow::{BorrowMut, Borrow};
+use cursive::views::{TextView, OnEventView };
+use std::borrow::{BorrowMut};
 
 use std::rc::{Rc, Weak};
 use std::ops::Deref;
 use std::cell::RefCell;
 use cursive::traits::Nameable;
 use std::io;
-use crate::playlist::PrompterPlaylist;
-use std::process::exit;
+use crate::playlist::{PrompterPlaylist, TextAndAudioPair};
+use std::ffi::OsString;
 
 mod fileloader;
 mod player;
 mod tui;
 mod playlist;
-
 
 enum PlaylistAction {
     NEXT,
@@ -89,39 +88,33 @@ fn execute_stop(siv: &mut Cursive, audio_player_ref: Weak<RefCell<Player>>, file
 
 fn execute_skip(siv: &mut Cursive, audio_player_ref: Weak<RefCell<Player>>, audio_player: &RefCell<Player>, moved_file_list: PrompterPlaylist, placeholder_text: &str) {
     siv.pop_layer();
-    let copied_List = moved_file_list.copy();
-    let mut text = placeholder_text;
-    if let Some(next_files) = copied_List.get_current_files() {
-        text = "Kein Text verfügbar.";
+    let current_audio_text_pair = moved_file_list.get_current_files().map(|v | {
+        TextAndAudioPair {
+            audio: v.audio.as_ref().map(|a| a.to_os_string()),
+            text: v.text.as_ref().map(|t| t.to_string())
+        }
+    });
+    let mut text = placeholder_text.to_string();
+    if let Some(next_files) = current_audio_text_pair {
+        text = "Kein Text verfügbar.".to_string();
 
-        if let Some(txt) = next_files.text.as_ref() {
-            text = txt;
+        if let Some(txt) = next_files.text.to_owned() {
+            text = txt.to_string();
         }
 
         if let Some(audio_file) = next_files.audio.as_ref() {
             audio_player.borrow_mut().play(audio_file.to_str().unwrap());
         }
     }
-    update(siv.borrow_mut(), moved_file_list, audio_player_ref, text);
+    update(siv.borrow_mut(), moved_file_list, audio_player_ref, text.as_str());
 }
-
-
-
-
-fn update_text_view(siv: &mut Cursive, text_to_display: &str) {
-    siv.call_on_name("text",
-                     |view: &mut TextView | {
-                         view.set_content(text_to_display.to_string());
-                     });
-}
-
 
 fn main()  -> io::Result<()> {
 
     let dir_to_search ="/home/martin/Documents";
     let initital_files = PrompterPlaylist::initialize(dir_to_search);
 
-    let mut audio_player = player::Player::new("/usr/bin/mpg123", Some("-q"));
+    let audio_player = player::Player::new("/usr/bin/mpg123", Some("-q"));
     let audio_player_ref = Rc::new(RefCell::new(audio_player));
 
     let mut siv = cursive::default();
