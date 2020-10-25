@@ -2,7 +2,7 @@ use crate::player::{Control, Player};
 use cursive::Cursive;
 use cursive::views::{TextView, OnEventView, TextContentRef};
 use std::borrow::{BorrowMut, Borrow};
-use crate::fileloader::{ PlaybackFiles, TextAndAudioPair};
+use crate::fileloader::{PrompterPlaylist, TextAndAudioPair};
 use std::rc::{Rc, Weak};
 use std::ops::Deref;
 use std::cell::RefCell;
@@ -14,7 +14,7 @@ mod player;
 mod tui;
 
 
-fn update(siv: &mut Cursive, current_files:  PlaybackFiles, audio_player: Weak<RefCell<Player>>, text: &str) {
+fn update(siv: &mut Cursive, current_files: PrompterPlaylist, audio_player: Weak<RefCell<Player>>, text: &str) {
     let text_view = TextView::new(text).with_name("text");
 
     let new_files = Rc::new(current_files);
@@ -37,7 +37,7 @@ fn update(siv: &mut Cursive, current_files:  PlaybackFiles, audio_player: Weak<R
     siv.add_layer(event_view);
 }
 
-fn stop_player(siv: &mut Cursive, file_list_ref: Rc<PlaybackFiles>, audio_player_ref: Weak<RefCell<Player>>) {
+fn stop_player(siv: &mut Cursive, file_list_ref: Rc<PrompterPlaylist>, audio_player_ref: Weak<RefCell<Player>>) {
     let strong_ref = audio_player_ref.upgrade().unwrap();
     let audio_player = strong_ref.deref();
     let file_list = file_list_ref.deref().copy();
@@ -56,7 +56,7 @@ fn stop_player(siv: &mut Cursive, file_list_ref: Rc<PlaybackFiles>, audio_player
     };
 }
 
-fn next(siv: &mut Cursive, file_list_ref: Rc<PlaybackFiles>, audio_player_ref: Weak<RefCell<Player>>)  {
+fn next(siv: &mut Cursive, file_list_ref: Rc<PrompterPlaylist>, audio_player_ref: Weak<RefCell<Player>>)  {
     if let Some(audio_player_upgrade) = audio_player_ref.upgrade() {
         let audio_player = audio_player_upgrade.deref();
         let file_list = file_list_ref.deref().copy();
@@ -89,7 +89,7 @@ fn next(siv: &mut Cursive, file_list_ref: Rc<PlaybackFiles>, audio_player_ref: W
         }
     }
 }
-fn previous(siv: &mut Cursive, file_list_ref: Rc<PlaybackFiles>, audio_player_ref: Weak<RefCell<Player>>)  {
+fn previous(siv: &mut Cursive, file_list_ref: Rc<PrompterPlaylist>, audio_player_ref: Weak<RefCell<Player>>)  {
     if let Some(audio_player_upgrade) = audio_player_ref.upgrade() {
         let audio_player = audio_player_upgrade.deref();
         let file_list = file_list_ref.deref().copy();
@@ -136,7 +136,7 @@ fn update_text_view(siv: &mut Cursive, text_to_display: &str) {
 fn main()  -> io::Result<()> {
 
     let dir_to_search ="/home/martin/Documents";
-    let initital_files = PlaybackFiles::initialize(dir_to_search);
+    let initital_files = PrompterPlaylist::initialize(dir_to_search);
 
     let mut audio_player = player::Player::new("/usr/bin/mpg123", Some("-q"));
     let audio_player_ref = Rc::new(RefCell::new(audio_player));
